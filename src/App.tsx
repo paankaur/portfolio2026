@@ -21,6 +21,13 @@ function App() {
           email="paan.kaur@gmail.com"
           description="Looking to begin my first job in the IT field. I am a fast learner and a hard worker. I am looking for a position where I can grow and learn new skills."
         />
+        <button
+          type="button"
+          className="counter"
+          onClick={() => setCount((count) => count - 1)}
+        >
+          Count is {count}
+        </button>
     </>
   )
 }
