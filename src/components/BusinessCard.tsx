@@ -1,4 +1,4 @@
-
+import { SiGithub } from "@icons-pack/react-simple-icons";
 
 type Props = {
     title: string,
@@ -8,7 +8,8 @@ type Props = {
     description?: string,
     image?: string,
     link?: string,
-    linkText?: string
+    linkText?: string,
+    githubLink?: string
 }
 
 const BusinessCard = (props: Props) => {
@@ -21,6 +22,12 @@ const BusinessCard = (props: Props) => {
       {props.description && <p className="text-gray-600 font-semibold mb-2">{props.description}</p>}
       {props.image && <img src={props.image} alt={props.title} />}
       {props.link && <a target="_blank" rel="noopener noreferrer" href={props.link} className="text-blue-500 hover:underline text-center">{props.linkText || props.link}</a>}
+      {props.githubLink && (
+        <a target="_blank" rel="noopener noreferrer" href={props.githubLink} className="text-gray-700 hover:text-gray-900 flex items-center justify-center gap-1 mt-2">
+          <SiGithub size={20} />
+          <span>GitHub</span>
+        </a>
+      )}
     </div>
   )
 }
