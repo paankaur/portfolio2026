@@ -1,4 +1,5 @@
 import { SiGithub } from "@icons-pack/react-simple-icons";
+import ProjectsCard from "@/components/ProjectsCard";
 
 type Props = {
     title: string,
@@ -28,6 +29,7 @@ const BusinessCard = (props: Props) => {
           <span>GitHub</span>
         </a>
       )}
+      <ProjectsCard />
     </div>
   )
 }

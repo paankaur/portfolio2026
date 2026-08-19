@@ -1,6 +1,6 @@
 
-import BusinessCard from './components/BusinessCard'
-import GameBoard from './components/GameBoard'
+import BusinessCard from '@/components/BusinessCard'
+import GameBoard from '@/components/GameBoard'
 
 
 function App() {

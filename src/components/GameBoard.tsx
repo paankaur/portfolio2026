@@ -1,4 +1,4 @@
-import { useWhackGame } from '../hooks/useWhackGame';
+import { useWhackGame } from '@/hooks/useWhackGame';
 
 interface GameBoardProps {
   children: React.ReactNode;
