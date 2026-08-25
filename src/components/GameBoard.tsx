@@ -64,7 +64,7 @@ export default function GameBoard({ children }: GameBoardProps) {
       {/* The 6x6 Grid Container */}
       <div className="grid grid-cols-6 grid-rows-6 gap-3 w-full max-w-[650px] aspect-square items-center justify-items-center mt-12">
         
-        {/* THE CENTRAL BUSINESS CARD */}
+        {/* THE CENTRAL BUSINESS CARD ---------------------------------------------------------------------------------------------------------- */}
         <div className="col-span-4 row-span-4 w-full h-full flex items-center justify-center z-10 p-1">
           {children}
         </div>
