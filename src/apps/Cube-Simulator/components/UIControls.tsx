@@ -1,7 +1,7 @@
 // src/apps/Cube-Simulator/components/UIControls.tsx
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { useCubeStore } from '../state/useCubeStore';
-import type { CSSProperties } from 'react';
+
 
 type Category = 'outer' | 'slice' | 'wide' | 'rotations';
 

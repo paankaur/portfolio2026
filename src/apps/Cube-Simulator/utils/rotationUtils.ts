@@ -59,7 +59,7 @@ export function rotateFaces(
 
   if (axis === 'y') {
     // Rotation around Y shifts +X(0), +Z(4), -X(1), -Z(5)
-    cycle = steps > 0 ? [0, 4, 1, 5] : [0, 5, 1, 4];
+    cycle = steps > 0 ? [0, 5, 1, 4] : [0, 4, 1, 5];
   } else if (axis === 'x') {
     // Rotation around X shifts +Y(2), +Z(4), -Y(3), -Z(5)
     cycle = steps > 0 ? [2, 4, 3, 5] : [2, 5, 3, 4];
