@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router'
 
 import Home from '@/Home'
-import CubeSim from '@/apps/CubeSim'
+import CubeSim from '@/apps/Cube-Simulator/CubeSim'
 
 
 function App() {
