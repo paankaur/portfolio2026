@@ -1,7 +1,19 @@
-import { CanvasView } from '@/apps/Cube-Simulator/components/CanvasView';
+import { CanvasView } from "@/apps/Cube-Simulator/components/CanvasView";
+import { UIControls } from "@/apps/Cube-Simulator/components/UIControls";
 
 export default function CubeSim() {
-  return <div style={{ width: '100vw', height: '100vh', background: '#1a1a1a' }}>
+  return (
+    <div
+      style={{
+        position: "relative",
+        width: "100vw",
+        height: "100vh",
+        background: "#121212",
+        overflow: "hidden",
+      }}
+    >
       <CanvasView />
+      <UIControls />
     </div>
+  );
 }
