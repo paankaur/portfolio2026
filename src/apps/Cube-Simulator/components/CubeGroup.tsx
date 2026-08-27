@@ -70,7 +70,7 @@ export const CubeGroup = () => {
   });
 
   return (
-    <group>
+    <group position={[0, 1.5, 0]}> {/* Added position offset to move up, might change later */}
       {/* Unaffected Cubies */}
       {staticCubies.map((cubie) => (
         <Cubie

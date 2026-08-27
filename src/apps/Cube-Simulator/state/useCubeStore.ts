@@ -15,6 +15,7 @@ interface CubeState {
 
   // Actions
   enqueueMove: (notation: string) => void;
+  resetCube: () => void;
   startNextMove: () => void;
   finishActiveMove: (updatedCubies: CubieData[]) => void;
 }
@@ -34,6 +35,15 @@ export const useCubeStore = create<CubeState>((set, get) => ({
     if (!get().isAnimating) {
       get().startNextMove();
     }
+  },
+
+  resetCube: () => {
+    set({
+      cubies: generateInitialCubies(),
+      moveQueue: [],
+      activeMove: null,
+      isAnimating: false,
+    });
   },
 
   startNextMove: () => {

@@ -1,15 +1,27 @@
 // src/apps/Cube-Simulator/components/UIControls.tsx
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useCubeStore } from "../state/useCubeStore";
 
 type Category = "outer" | "slice" | "wide" | "rotations";
 
 export const UIControls = () => {
   const enqueueMove = useCubeStore((state) => state.enqueueMove);
+  const resetCube = useCubeStore((state) => state.resetCube);
   const isAnimating = useCubeStore((state) => state.isAnimating);
   const [isPrime, setIsPrime] = useState(false); // Inverse (') toggle
   const [isDouble, setIsDouble] = useState(false); // Double turn (2) toggle
   const [activeCategory, setActiveCategory] = useState<Category>("outer");
+  const [isResetPending, setIsResetPending] = useState(false);
+
+  useEffect(() => {
+    if (!isResetPending) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setIsResetPending(false);
+    }, 1500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [isResetPending]);
 
   // Move definitions per category
   const categories: Record<Category, { label: string; moves: string[] }> = {
@@ -40,8 +52,34 @@ export const UIControls = () => {
     enqueueMove(notation);
   };
 
+  const handleResetClick = () => {
+    if (isAnimating) return;
+    if (isResetPending) {
+      resetCube();
+      setIsResetPending(false);
+      return;
+    }
+    setIsResetPending(true);
+  };
+
   return (
     <div className="absolute bottom-5 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-3 rounded-xl border border-white/10 bg-[rgba(20,20,20,0.85)] p-4 shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-md">
+      {/* Future actions */}
+      <div className="flex justify-center">
+        <button
+          type="button"
+          disabled={isAnimating}
+          onClick={handleResetClick}
+          className={`rounded-md border px-4 py-1.5 text-xs font-bold text-white transition-colors duration-150 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 ${
+            isResetPending
+              ? "border-[#e74c3c] bg-[#e74c3c]"
+              : "border-white/20 bg-[#333]"
+          }`}
+        >
+          {isResetPending ? "Confirm reset" : "Reset cube"}
+        </button>
+      </div>
+
       {/* Category Tabs */}
       <div className="flex gap-1.5">
         {(Object.keys(categories) as Category[]).map((cat) => (
