@@ -1,34 +1,33 @@
 // src/apps/Cube-Simulator/components/UIControls.tsx
-import { useState, type CSSProperties } from 'react';
-import { useCubeStore } from '../state/useCubeStore';
+import { useState } from "react";
+import { useCubeStore } from "../state/useCubeStore";
 
-
-type Category = 'outer' | 'slice' | 'wide' | 'rotations';
+type Category = "outer" | "slice" | "wide" | "rotations";
 
 export const UIControls = () => {
   const enqueueMove = useCubeStore((state) => state.enqueueMove);
   const isAnimating = useCubeStore((state) => state.isAnimating);
   const [isPrime, setIsPrime] = useState(false); // Inverse (') toggle
   const [isDouble, setIsDouble] = useState(false); // Double turn (2) toggle
-  const [activeCategory, setActiveCategory] = useState<Category>('outer');
+  const [activeCategory, setActiveCategory] = useState<Category>("outer");
 
   // Move definitions per category
   const categories: Record<Category, { label: string; moves: string[] }> = {
     outer: {
-      label: 'Outer Faces',
-      moves: ['U', 'D', 'L', 'R', 'F', 'B'],
+      label: "Outer Faces",
+      moves: ["U", "D", "L", "R", "F", "B"],
     },
     slice: {
-      label: 'Middle Slices',
-      moves: ['M', 'E', 'S'],
+      label: "Middle Slices",
+      moves: ["M", "E", "S"],
     },
     wide: {
-      label: 'Wide (2-Layer)',
-      moves: ['u', 'd', 'l', 'r', 'f', 'b'],
+      label: "Wide (2-Layer)",
+      moves: ["u", "d", "l", "r", "f", "b"],
     },
     rotations: {
-      label: 'Cube Rotations',
-      moves: ['x', 'y', 'z'],
+      label: "Cube Rotations",
+      moves: ["x", "y", "z"],
     },
   };
 
@@ -36,23 +35,24 @@ export const UIControls = () => {
     if (isAnimating) return;
 
     let notation = baseMove;
-    if (isDouble) notation += '2';
+    if (isDouble) notation += "2";
     if (isPrime !== isReverse) notation += "'";
     enqueueMove(notation);
   };
 
   return (
-    <div style={containerStyle}>
+    <div className="absolute bottom-5 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-3 rounded-xl border border-white/10 bg-[rgba(20,20,20,0.85)] p-4 shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-md">
       {/* Category Tabs */}
-      <div style={tabContainerStyle}>
+      <div className="flex gap-1.5">
         {(Object.keys(categories) as Category[]).map((cat) => (
           <button
             key={cat}
             onClick={() => setActiveCategory(cat)}
-            style={{
-              ...tabButtonStyle,
-              ...(activeCategory === cat ? activeTabStyle : {}),
-            }}
+            className={`rounded-md border-0 px-3 py-1.5 text-[13px] font-semibold transition-all duration-200 ${
+              activeCategory === cat
+                ? "bg-white/15 text-white"
+                : "bg-transparent text-[#888] hover:bg-white/10 hover:text-white"
+            }`}
           >
             {categories[cat].label}
           </button>
@@ -60,32 +60,30 @@ export const UIControls = () => {
       </div>
 
       {/* Modifier Toggles: Inverse (') & Double (2) */}
-      <div style={modifierContainerStyle}>
+      <div className="flex gap-2">
         <button
           onClick={() => setIsPrime(!isPrime)}
-          style={{
-            ...modifierButtonStyle,
-            backgroundColor: isPrime ? '#e74c3c' : '#333',
-          }}
+          className={`rounded-md border border-white/20 px-3.5 py-1.5 text-xs font-bold text-white transition-colors duration-150 hover:brightness-110 ${
+            isPrime ? "bg-[#e74c3c]" : "bg-[#333]"
+          }`}
         >
           Prime (')
         </button>
         <button
           onClick={() => setIsDouble(!isDouble)}
-          style={{
-            ...modifierButtonStyle,
-            backgroundColor: isDouble ? '#3498db' : '#333',
-          }}
+          className={`rounded-md border border-white/20 px-3.5 py-1.5 text-xs font-bold text-white transition-colors duration-150 hover:brightness-110 ${
+            isDouble ? "bg-[#3498db]" : "bg-[#333]"
+          }`}
         >
           Double (2)
         </button>
       </div>
 
       {/* Move Buttons Grid */}
-      <div style={gridStyle}>
+      <div className="flex justify-center gap-2">
         {categories[activeCategory].moves.map((baseMove) => {
           let displayLabel = baseMove;
-          if (isDouble) displayLabel += '2';
+          if (isDouble) displayLabel += "2";
           if (isPrime) displayLabel += "'";
 
           return (
@@ -97,7 +95,7 @@ export const UIControls = () => {
                 event.preventDefault();
                 handleMoveClick(baseMove, true);
               }}
-              style={moveButtonStyle}
+              className="flex h-11 w-11 items-center justify-center rounded-lg border border-[#444] bg-[#2a2a2a] text-base font-bold text-white transition-[transform,background-color] duration-150 hover:bg-[#3a3a3a] active:scale-95 cursor-pointer disabled:opacity-50"
             >
               {displayLabel}
             </button>
@@ -106,83 +104,4 @@ export const UIControls = () => {
       </div>
     </div>
   );
-};
-
-// Inline CSS Styles
-const containerStyle: CSSProperties = {
-  position: 'absolute',
-  bottom: '20px',
-  left: '50%',
-  transform: 'translateX(-50%)',
-  backgroundColor: 'rgba(20, 20, 20, 0.85)',
-  backdropFilter: 'blur(8px)',
-  padding: '16px',
-  borderRadius: '12px',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '12px',
-  alignItems: 'center',
-  zIndex: 10,
-  boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-  border: '1px solid rgba(255, 255, 255, 0.1)',
-};
-
-const tabContainerStyle: CSSProperties = {
-  display: 'flex',
-  gap: '6px',
-};
-
-const tabButtonStyle: CSSProperties = {
-  background: 'none',
-  border: 'none',
-  color: '#888',
-  padding: '6px 12px',
-  cursor: 'pointer',
-  fontSize: '13px',
-  fontWeight: 600,
-  borderRadius: '6px',
-  transition: 'all 0.2s ease',
-};
-
-const activeTabStyle: CSSProperties = {
-  backgroundColor: 'rgba(255, 255, 255, 0.15)',
-  color: '#fff',
-};
-
-const modifierContainerStyle: CSSProperties = {
-  display: 'flex',
-  gap: '8px',
-};
-
-const modifierButtonStyle: CSSProperties = {
-  border: '1px solid rgba(255, 255, 255, 0.2)',
-  color: '#fff',
-  padding: '6px 14px',
-  borderRadius: '6px',
-  fontSize: '12px',
-  fontWeight: 'bold',
-  cursor: 'pointer',
-  transition: 'background-color 0.15s ease',
-};
-
-const gridStyle: CSSProperties = {
-  display: 'flex',
-  gap: '8px',
-  justifyContent: 'center',
-};
-
-const moveButtonStyle: CSSProperties = {
-  width: '44px',
-  height: '44px',
-  backgroundColor: '#2a2a2a',
-  border: '1px solid #444',
-  borderRadius: '8px',
-  color: '#fff',
-  fontSize: '16px',
-  fontWeight: 'bold',
-  cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  transition: 'transform 0.05s ease, background-color 0.15s ease',
 };
