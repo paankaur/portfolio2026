@@ -7,6 +7,7 @@ type Category = 'outer' | 'slice' | 'wide' | 'rotations';
 
 export const UIControls = () => {
   const enqueueMove = useCubeStore((state) => state.enqueueMove);
+  const isAnimating = useCubeStore((state) => state.isAnimating);
   const [isPrime, setIsPrime] = useState(false); // Inverse (') toggle
   const [isDouble, setIsDouble] = useState(false); // Double turn (2) toggle
   const [activeCategory, setActiveCategory] = useState<Category>('outer');
@@ -31,10 +32,12 @@ export const UIControls = () => {
     },
   };
 
-  const handleMoveClick = (baseMove: string) => {
+  const handleMoveClick = (baseMove: string, isReverse = false) => {
+    if (isAnimating) return;
+
     let notation = baseMove;
     if (isDouble) notation += '2';
-    if (isPrime) notation += "'";
+    if (isPrime !== isReverse) notation += "'";
     enqueueMove(notation);
   };
 
@@ -88,7 +91,12 @@ export const UIControls = () => {
           return (
             <button
               key={baseMove}
+              disabled={isAnimating}
               onClick={() => handleMoveClick(baseMove)}
+              onContextMenu={(event) => {
+                event.preventDefault();
+                handleMoveClick(baseMove, true);
+              }}
               style={moveButtonStyle}
             >
               {displayLabel}
