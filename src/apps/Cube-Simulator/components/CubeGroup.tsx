@@ -40,7 +40,7 @@ export const CubeGroup = () => {
       rotation: targetRotation,
       onRest: () => {
         const updatedCubies = applyMoveToCubies(cubies, activeMove);
-        finishActiveMove(updatedCubies);
+        finishActiveMove(activeMove.executionId, updatedCubies);
       },
     });
   }, [activeMove, api, cubies, finishActiveMove]);
