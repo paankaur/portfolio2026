@@ -1,5 +1,15 @@
 // src/apps/Cube-Simulator/components/UIControls.tsx
 import { useEffect, useState } from "react";
+import {
+  Play,
+  Pause,
+  SkipBack,
+  SkipForward,
+  Square,
+  Repeat,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import { useCubeStore } from "../state/useCubeStore";
 import { BUILT_IN_RECORDINGS } from "@/apps/Cube-Simulator/recordings/builtInRecordings";
 import { createLocalStorageRecordingRepository } from "@/apps/Cube-Simulator/recordings/localStorageRecordingRepository";
@@ -32,6 +42,18 @@ export const UIControls = () => {
   const playbackHighlightedIndex = useCubeStore(
     (state) => state.playbackHighlightedIndex,
   );
+  const playbackLoopMode = useCubeStore((state) => state.playbackLoopMode);
+  const togglePlaybackLoopMode = useCubeStore(
+    (state) => state.togglePlaybackLoopMode,
+  );
+  const playbackMoveDelayMs = useCubeStore((state) => state.playbackMoveDelayMs);
+  const setPlaybackMoveDelayMs = useCubeStore(
+    (state) => state.setPlaybackMoveDelayMs,
+  );
+  const animationDurationMs = useCubeStore((state) => state.animationDurationMs);
+  const setAnimationDurationMs = useCubeStore(
+    (state) => state.setAnimationDurationMs,
+  );
   const [isPrime, setIsPrime] = useState(false); // Inverse (') toggle
   const [isDouble, setIsDouble] = useState(false); // Double turn (2) toggle
   const [activeCategory, setActiveCategory] = useState<Category>("outer");
@@ -40,6 +62,7 @@ export const UIControls = () => {
   const [savedRecordingCount, setSavedRecordingCount] = useState(0);
   const [recordingMessage, setRecordingMessage] = useState("");
   const [savedRecordings, setSavedRecordings] = useState<Recording[]>([]);
+  const [isTimingExpanded, setIsTimingExpanded] = useState(false);
 
   useEffect(() => {
     recordingRepository.list().then((recordings) => {
@@ -142,8 +165,8 @@ export const UIControls = () => {
     );
   };
 
-  const handlePlayRecording = (recording: Recording) => {
-    startPlayback(recording);
+  const handlePlayRecording = (recording: Recording, direction: 'forward' | 'reverse' = 'forward') => {
+    startPlayback(recording, direction);
   };
 
   const availableRecordings = [...BUILT_IN_RECORDINGS, ...savedRecordings];
@@ -221,6 +244,58 @@ export const UIControls = () => {
         </button>
       </div>
 
+      {/* Timing Controls - Collapsible */}
+      <div className="w-full min-w-72 rounded-md border border-white/10 bg-[#1a1a1a]">
+        <button
+          type="button"
+          onClick={() => setIsTimingExpanded(!isTimingExpanded)}
+          className="w-full flex items-center justify-between px-3 py-2 text-xs font-bold text-white hover:bg-white/5 transition-colors"
+        >
+          <span>Timing</span>
+          {isTimingExpanded ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+        </button>
+        
+        {isTimingExpanded && (
+          <div className="border-t border-white/10 px-3 py-3 space-y-3">
+            <div>
+              <div className="mb-1 flex items-center justify-between text-[11px] text-[#bbb]">
+                <label htmlFor="animation-duration">Animation Duration</label>
+                <span className="text-white">{animationDurationMs}ms</span>
+              </div>
+              <input
+                id="animation-duration"
+                type="range"
+                min="100"
+                max="2000"
+                step="50"
+                value={animationDurationMs}
+                onChange={(e) => setAnimationDurationMs(Number(e.target.value))}
+                className="w-full cursor-pointer accent-[#4b8ac4]"
+              />
+              <div className="mt-0.5 text-[10px] text-[#666]">Single move animation time</div>
+            </div>
+
+            <div>
+              <div className="mb-1 flex items-center justify-between text-[11px] text-[#bbb]">
+                <label htmlFor="move-delay">Move Delay</label>
+                <span className="text-white">{playbackMoveDelayMs}ms</span>
+              </div>
+              <input
+                id="move-delay"
+                type="range"
+                min="50"
+                max="2000"
+                step="25"
+                value={playbackMoveDelayMs}
+                onChange={(e) => setPlaybackMoveDelayMs(Number(e.target.value))}
+                className="w-full cursor-pointer accent-[#4b8ac4]"
+              />
+              <div className="mt-0.5 text-[10px] text-[#666]">Delay between playback moves</div>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Category Tabs */}
       <div className="flex gap-1.5">
         {(Object.keys(categories) as Category[]).map((cat) => (
@@ -269,17 +344,43 @@ export const UIControls = () => {
                       </span>
                     ))}
                   </div>
-                  <button
-                    type="button"
-                    disabled={isAnimating || playbackStatus === "playing"}
-                    onClick={() => handlePlayRecording(recording)}
-                    className="mt-1 rounded border border-[#4b8ac4] bg-[#23496b] px-2 py-1 text-[11px] text-white hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Play
-                  </button>
+                  <div className="mt-1 flex gap-2">
+                    <button
+                      type="button"
+                      disabled={isAnimating || playbackStatus === "playing"}
+                      onClick={() => handlePlayRecording(recording, 'forward')}
+                      className="rounded border border-[#4b8ac4] bg-[#23496b] p-1.5 text-white transition-opacity hover:brightness-110 disabled:opacity-40"
+                      title="Play forward"
+                    >
+                      <Play size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isAnimating || playbackStatus === "playing"}
+                      onClick={() => handlePlayRecording(recording, 'reverse')}
+                      className="rounded border border-[#4b8ac4] bg-[#23496b] p-1.5 text-white transition-opacity hover:brightness-110 disabled:opacity-40"
+                      title="Play reverse"
+                    >
+                      <SkipBack size={16} />
+                    </button>
+                  </div>
                   {playbackRecording?.id === recording.id && (
                       <>
-                        {playbackStatus !== "finished" && (
+                        <div className="mt-2 flex gap-2">
+                          {/* Previous (Step Back) */}
+                          <button
+                            type="button"
+                            disabled={
+                              playbackStatus !== "paused" || isAnimating
+                            }
+                            onClick={() => stepPlayback("previous")}
+                            className="rounded border border-[#777] bg-[#3b3b3b] p-1.5 text-white transition-opacity hover:brightness-110 disabled:opacity-40"
+                            title="Previous step"
+                          >
+                            <SkipBack size={16} />
+                          </button>
+
+                          {/* Play/Pause */}
                           <button
                             type="button"
                             disabled={playbackStatus === "pause-requested"}
@@ -288,40 +389,67 @@ export const UIControls = () => {
                                 ? resumePlayback
                                 : pausePlayback
                             }
-                            className="ml-1 rounded border border-[#a77b31] bg-[#634819] px-2 py-1 text-[11px] text-white hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                            className="rounded border border-[#a77b31] bg-[#634819] p-1.5 text-white transition-opacity hover:brightness-110 disabled:opacity-40"
+                            title={
+                              playbackStatus === "paused"
+                                ? "Resume playback"
+                                : "Pause playback"
+                            }
                           >
-                            {playbackStatus === "paused"
-                              ? "Resume"
-                              : "Pause"}
+                            {playbackStatus === "paused" ? (
+                              <Play size={16} />
+                            ) : (
+                              <Pause size={16} />
+                            )}
                           </button>
-                        )}
-                        <button
-                          type="button"
-                          disabled={
-                            playbackStatus !== "paused" || isAnimating
-                          }
-                          onClick={() => stepPlayback("previous")}
-                          className="ml-1 rounded border border-[#777] bg-[#3b3b3b] px-2 py-1 text-[11px] text-white hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          Previous
-                        </button>
-                        <button
-                          type="button"
-                          disabled={
-                            playbackStatus !== "paused" || isAnimating
-                          }
-                          onClick={() => stepPlayback("next")}
-                          className="ml-1 rounded border border-[#777] bg-[#3b3b3b] px-2 py-1 text-[11px] text-white hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          Next
-                        </button>
-                        <button
-                          type="button"
-                          onClick={stopPlayback}
-                          className="ml-1 rounded border border-[#7a3030] bg-[#4a2020] px-2 py-1 text-[11px] text-white hover:brightness-110"
-                        >
-                          Stop
-                        </button>
+
+                          {/* Next (Step Forward) */}
+                          <button
+                            type="button"
+                            disabled={
+                              playbackStatus !== "paused" || isAnimating
+                            }
+                            onClick={() => stepPlayback("next")}
+                            className="rounded border border-[#777] bg-[#3b3b3b] p-1.5 text-white transition-opacity hover:brightness-110 disabled:opacity-40"
+                            title="Next step"
+                          >
+                            <SkipForward size={16} />
+                          </button>
+
+                          {/* Stop */}
+                          <button
+                            type="button"
+                            disabled={playbackStatus === "finished"}
+                            onClick={stopPlayback}
+                            className="rounded border border-[#7a3030] bg-[#4a2020] p-1.5 text-white transition-opacity hover:brightness-110 disabled:opacity-40"
+                            title="Stop playback"
+                          >
+                            <Square size={16} />
+                          </button>
+
+                          {/* Loop */}
+                          <button
+                            type="button"
+                            disabled={playbackStatus === "idle" || playbackStatus === "finished"}
+                            onClick={togglePlaybackLoopMode}
+                            className={`rounded border p-1.5 transition-opacity ${
+                              playbackLoopMode === "bidirectional"
+                                ? "border-[#27ae60] bg-[#1e5631] text-white hover:brightness-110"
+                                : playbackLoopMode === "single"
+                                  ? "border-[#e67e22] bg-[#7a4214] text-white hover:brightness-110"
+                                  : "border-[#666] bg-[#333] text-white hover:brightness-110"
+                            } disabled:opacity-40`}
+                            title={
+                              playbackLoopMode === "off"
+                                ? "Loop off (click: single direction)"
+                                : playbackLoopMode === "single"
+                                  ? "Single direction loop (click: bidirectional)"
+                                  : "Bidirectional loop (click: loop off)"
+                            }
+                          >
+                            <Repeat size={16} />
+                          </button>
+                        </div>
                       </>
                     )}
                 </div>

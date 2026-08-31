@@ -9,10 +9,10 @@ import {
   type RecordingSession,
   type RecordingStatus,
   type PlaybackStatus,
+  type PlaybackDirection,
+  type PlaybackLoopMode,
 } from '@/apps/Cube-Simulator/recordings/recordingTypes';
 import { invertNotation } from '@/apps/Cube-Simulator/utils/notationUtils';
-
-const PLAYBACK_MOVE_PAUSE_MS = 250;
 
 interface ActiveMove extends MoveDefinition {
   notation: string;
@@ -43,17 +43,24 @@ interface CubeState {
   playbackRecording: Recording | null;
   playbackPosition: number;
   playbackHighlightedIndex: number | null;
+  playbackDirection: PlaybackDirection;
+  playbackLoopMode: PlaybackLoopMode;
+  playbackMoveDelayMs: number;
+  animationDurationMs: number;
 
   // Actions
   enqueueMove: (notation: string, source?: MoveSource) => void;
   startRecording: (name: string) => boolean;
   cancelRecording: () => void;
   stopRecording: () => Recording | null;
-  startPlayback: (recording: Recording) => void;
+  startPlayback: (recording: Recording, direction?: PlaybackDirection) => void;
   pausePlayback: () => void;
   resumePlayback: () => void;
   stepPlayback: (direction: 'previous' | 'next') => void;
+  togglePlaybackLoopMode: () => void;
   stopPlayback: () => void;
+  setPlaybackMoveDelayMs: (delay: number) => void;
+  setAnimationDurationMs: (duration: number) => void;
   resetCube: () => void;
   startNextMove: () => void;
   finishActiveMove: (executionId: number, updatedCubies: CubieData[]) => void;
@@ -81,6 +88,10 @@ export const useCubeStore = create<CubeState>((set, get) => {
   playbackRecording: null,
   playbackPosition: 0,
   playbackHighlightedIndex: null,
+  playbackDirection: 'forward',
+  playbackLoopMode: 'off',
+  playbackMoveDelayMs: 250,
+  animationDurationMs: 300,
 
   enqueueMove: (notation: string, source: MoveSource = 'manual') => {
     if (!MOVE_MAP[notation]) {
@@ -131,21 +142,28 @@ export const useCubeStore = create<CubeState>((set, get) => {
     return recording;
   },
 
-  startPlayback: (recording: Recording) => {
+  startPlayback: (recording: Recording, direction: PlaybackDirection = 'forward') => {
     if (get().isAnimating || recording.moves.length === 0) return;
 
     clearPlaybackTimer();
+    const isReverse = direction === 'reverse';
+    const startIndex = isReverse ? recording.moves.length - 1 : 0;
+    const moveNotation = isReverse
+      ? invertNotation(recording.moves[startIndex])
+      : recording.moves[startIndex];
+
     set({
       playbackStatus: 'playing',
       playbackRecording: recording,
-      playbackPosition: 0,
+      playbackPosition: startIndex,
       playbackHighlightedIndex: null,
+      playbackDirection: direction,
       moveQueue: [
         {
-          notation: recording.moves[0],
+          notation: moveNotation,
           source: 'playback',
-          playbackIndex: 0,
-          playbackDelta: 1,
+          playbackIndex: startIndex,
+          playbackDelta: isReverse ? -1 : 1,
         },
       ],
     });
@@ -182,6 +200,7 @@ export const useCubeStore = create<CubeState>((set, get) => {
       playbackStatus,
       isAnimating,
       playbackHighlightedIndex,
+      playbackDirection,
     } = get();
     if (
       playbackRecording === null ||
@@ -191,8 +210,16 @@ export const useCubeStore = create<CubeState>((set, get) => {
       return;
     }
 
+    // For reverse playback, flip the step direction
+    const isReversePlayback = playbackDirection === 'reverse';
+    const effectiveDirection = isReversePlayback
+      ? direction === 'next'
+        ? 'previous'
+        : 'next'
+      : direction;
+
     const playbackIndex =
-      direction === 'next'
+      effectiveDirection === 'next'
         ? playbackPosition
         : playbackHighlightedIndex === 0
           ? playbackRecording.moves.length - 1
@@ -205,12 +232,12 @@ export const useCubeStore = create<CubeState>((set, get) => {
     }
 
     const notation =
-      direction === 'next'
+      effectiveDirection === 'next'
         ? playbackRecording.moves[playbackIndex]
         : invertNotation(playbackRecording.moves[playbackIndex]);
     set({
       playbackPosition:
-        direction === 'previous' && playbackHighlightedIndex === 0
+        effectiveDirection === 'previous' && playbackHighlightedIndex === 0
           ? playbackRecording.moves.length
           : playbackPosition,
       moveQueue: [
@@ -218,12 +245,29 @@ export const useCubeStore = create<CubeState>((set, get) => {
           notation,
           source: 'playback',
           playbackIndex,
-          playbackDelta: direction === 'next' ? 1 : -1,
+          playbackDelta: effectiveDirection === 'next' ? 1 : -1,
         },
       ],
       playbackStatus: 'pause-requested',
     });
     get().startNextMove();
+  },
+
+  togglePlaybackLoopMode: () => {
+    set((state) => {
+      const modes: PlaybackLoopMode[] = ['off', 'single', 'bidirectional'];
+      const currentIndex = modes.indexOf(state.playbackLoopMode);
+      const nextIndex = (currentIndex + 1) % modes.length;
+      return { playbackLoopMode: modes[nextIndex] };
+    });
+  },
+
+  setPlaybackMoveDelayMs: (delay: number) => {
+    set({ playbackMoveDelayMs: Math.max(50, Math.min(2000, delay)) });
+  },
+
+  setAnimationDurationMs: (duration: number) => {
+    set({ animationDurationMs: Math.max(100, Math.min(2000, duration)) });
   },
 
   stopPlayback: () => {
@@ -233,6 +277,8 @@ export const useCubeStore = create<CubeState>((set, get) => {
       playbackRecording: null,
       playbackPosition: 0,
       playbackHighlightedIndex: null,
+      playbackDirection: 'forward',
+      playbackLoopMode: 'off',
       moveQueue: [],
     });
   },
@@ -307,6 +353,15 @@ export const useCubeStore = create<CubeState>((set, get) => {
       nextPlaybackPosition < playbackRecording.moves.length;
     const shouldPauseAfterMove = playbackStatus === 'pause-requested';
 
+    const playbackDelta = activeMove?.playbackDelta ?? 1;
+    const nextMoveNotation = hasNextPlaybackMove
+      ? playbackRecording?.moves[nextPlaybackPosition]
+      : '';
+    const nextMoveFormatted =
+      hasNextPlaybackMove && playbackDelta === -1
+        ? invertNotation(nextMoveNotation ?? '')
+        : nextMoveNotation;
+
     set({
       cubies: updatedCubies,
       activeMove: null,
@@ -324,10 +379,10 @@ export const useCubeStore = create<CubeState>((set, get) => {
               hasNextPlaybackMove && playbackRecording
                 ? [
                     {
-                      notation: playbackRecording.moves[nextPlaybackPosition],
+                      notation: nextMoveFormatted ?? '',
                       source: 'playback' as const,
                       playbackIndex: nextPlaybackPosition,
-                      playbackDelta: 1,
+                      playbackDelta: playbackDelta,
                     },
                   ]
                 : [],
@@ -340,6 +395,28 @@ export const useCubeStore = create<CubeState>((set, get) => {
           }
         : {}),
     });
+
+    // Handle loop mode: when playback finishes, either restart or reverse direction
+    if (
+      isPlaybackMove &&
+      !hasNextPlaybackMove &&
+      !shouldPauseAfterMove &&
+      playbackStatus === 'playing'
+    ) {
+      const { playbackLoopMode, playbackRecording: recording, playbackDirection: currentDirection } = get();
+      if (playbackLoopMode !== 'off' && recording) {
+        const nextDirection = playbackLoopMode === 'bidirectional' ? (currentDirection === 'forward' ? 'reverse' : 'forward') : currentDirection;
+        clearPlaybackTimer();
+        playbackTimer = setTimeout(() => {
+          playbackTimer = null;
+          if (get().playbackLoopMode !== 'off' && get().playbackStatus === 'finished') {
+            get().startPlayback(recording, nextDirection);
+          }
+        }, get().playbackMoveDelayMs);
+        return;
+      }
+    }
+
     if (
       isPlaybackMove &&
       hasNextPlaybackMove &&
@@ -352,7 +429,7 @@ export const useCubeStore = create<CubeState>((set, get) => {
         if (get().playbackStatus === 'playing') {
           get().startNextMove();
         }
-      }, PLAYBACK_MOVE_PAUSE_MS);
+      }, get().playbackMoveDelayMs);
       return;
     }
 

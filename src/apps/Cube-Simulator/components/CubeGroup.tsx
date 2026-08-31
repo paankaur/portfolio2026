@@ -13,12 +13,17 @@ export const CubeGroup = () => {
   const cubies = useCubeStore((state) => state.cubies);
   const activeMove = useCubeStore((state) => state.activeMove);
   const finishActiveMove = useCubeStore((state) => state.finishActiveMove);
+  const animationDurationMs = useCubeStore((state) => state.animationDurationMs);
 
   // Set up rotation animation spring
   const [{ rotation }, api] = useSpring(() => ({
     rotation: [0, 0, 0] as [number, number, number],
     config: { tension: 280, friction: 30 },
   }));
+
+  // Detect if current move is a double move (e.g., R2, U2')
+  const isDoubleMove = activeMove?.notation.includes('2') ?? false;
+  const animationDuration = isDoubleMove ? animationDurationMs * 2 : animationDurationMs;
 
   // Trigger animation when activeMove changes
   useEffect(() => {
@@ -38,12 +43,13 @@ export const CubeGroup = () => {
     // Animate to target angle, then commit calculated state to store
     api.start({
       rotation: targetRotation,
+      config: { duration: animationDuration },
       onRest: () => {
         const updatedCubies = applyMoveToCubies(cubies, activeMove);
         finishActiveMove(activeMove.executionId, updatedCubies);
       },
     });
-  }, [activeMove, api, cubies, finishActiveMove]);
+  }, [activeMove, api, cubies, finishActiveMove, animationDuration]);
 
   // Separate active (animating) cubies from static ones
   const activeCubieIds = new Set<string>();

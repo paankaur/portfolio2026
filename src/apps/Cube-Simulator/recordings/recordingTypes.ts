@@ -15,6 +15,10 @@ export type PlaybackStatus =
   | 'paused'
   | 'finished';
 
+export type PlaybackDirection = 'forward' | 'reverse';
+
+export type PlaybackLoopMode = 'off' | 'single' | 'bidirectional';
+
 export interface RecordingSession {
   name: string;
   startState: CubieData[];
