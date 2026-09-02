@@ -278,7 +278,6 @@ export const useCubeStore = create<CubeState>((set, get) => {
       playbackPosition: 0,
       playbackHighlightedIndex: null,
       playbackDirection: 'forward',
-      playbackLoopMode: 'off',
       moveQueue: [],
     });
   },

@@ -7,15 +7,18 @@ import {
   SkipForward,
   Square,
   Repeat,
+  ArrowLeft,
+  ArrowRight,
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-import { useCubeStore } from "../state/useCubeStore";
+import { useCubeStore } from "@/apps/Cube-Simulator/state/useCubeStore";
 import { BUILT_IN_RECORDINGS } from "@/apps/Cube-Simulator/recordings/builtInRecordings";
 import { createLocalStorageRecordingRepository } from "@/apps/Cube-Simulator/recordings/localStorageRecordingRepository";
 import {
   MAX_RECORDING_MOVES,
   RECORDING_WARNING_THRESHOLD,
+  type PlaybackDirection,
   type Recording,
 } from "@/apps/Cube-Simulator/recordings/recordingTypes";
 
@@ -62,6 +65,9 @@ export const UIControls = () => {
   const [savedRecordingCount, setSavedRecordingCount] = useState(0);
   const [recordingMessage, setRecordingMessage] = useState("");
   const [savedRecordings, setSavedRecordings] = useState<Recording[]>([]);
+  const [recordingDirections, setRecordingDirections] = useState<
+    Record<string, PlaybackDirection>
+  >({});
   const [isTimingExpanded, setIsTimingExpanded] = useState(false);
 
   useEffect(() => {
@@ -165,8 +171,16 @@ export const UIControls = () => {
     );
   };
 
-  const handlePlayRecording = (recording: Recording, direction: 'forward' | 'reverse' = 'forward') => {
-    startPlayback(recording, direction);
+  const handlePlayRecording = (recording: Recording) => {
+    startPlayback(recording, recordingDirections[recording.id] ?? "forward");
+  };
+
+  const handleToggleRecordingDirection = (recordingId: string) => {
+    setRecordingDirections((directions) => ({
+      ...directions,
+      [recordingId]:
+        directions[recordingId] === "reverse" ? "forward" : "reverse",
+    }));
   };
 
   const availableRecordings = [...BUILT_IN_RECORDINGS, ...savedRecordings];
@@ -348,110 +362,130 @@ export const UIControls = () => {
                     <button
                       type="button"
                       disabled={isAnimating || playbackStatus === "playing"}
-                      onClick={() => handlePlayRecording(recording, 'forward')}
+                      onClick={() => handlePlayRecording(recording)}
                       className="rounded border border-[#4b8ac4] bg-[#23496b] p-1.5 text-white transition-opacity hover:brightness-110 disabled:opacity-40"
-                      title="Play forward"
+                      title="Play recording"
+                      aria-label={`Play ${recording.name}`}
                     >
                       <Play size={16} />
                     </button>
                     <button
                       type="button"
-                      disabled={isAnimating || playbackStatus === "playing"}
-                      onClick={() => handlePlayRecording(recording, 'reverse')}
-                      className="rounded border border-[#4b8ac4] bg-[#23496b] p-1.5 text-white transition-opacity hover:brightness-110 disabled:opacity-40"
-                      title="Play reverse"
+                      disabled={
+                        isAnimating ||
+                        (playbackRecording?.id === recording.id &&
+                          playbackStatus !== "idle" &&
+                          playbackStatus !== "finished")
+                      }
+                      onClick={() => handleToggleRecordingDirection(recording.id)}
+                      className={`rounded border p-1.5 text-white transition-opacity hover:brightness-110 disabled:opacity-40 ${
+                        recordingDirections[recording.id] === "reverse"
+                          ? "border-[#e67e22] bg-[#7a4214]"
+                          : "border-[#4b8ac4] bg-[#23496b]"
+                      }`}
+                      title={`Direction: ${recordingDirections[recording.id] === "reverse" ? "reverse" : "forward"}. Click to toggle.`}
+                      aria-label={`Set ${recording.name} direction to ${recordingDirections[recording.id] === "reverse" ? "forward" : "reverse"}`}
+                    >
+                      {recordingDirections[recording.id] === "reverse" ? (
+                        <ArrowLeft size={16} />
+                      ) : (
+                        <ArrowRight size={16} />
+                      )}
+                    </button>
+                  </div>
+                  <div className="mt-2 flex gap-2">
+                    {/* Previous (Step Back) */}
+                    <button
+                      type="button"
+                      disabled={
+                        playbackRecording?.id !== recording.id ||
+                        playbackStatus !== "paused" ||
+                        isAnimating
+                      }
+                      onClick={() => stepPlayback("previous")}
+                      className="rounded border border-[#777] bg-[#3b3b3b] p-1.5 text-white transition-opacity hover:brightness-110 disabled:opacity-40"
+                      title="Previous step"
                     >
                       <SkipBack size={16} />
                     </button>
+
+                    {/* Play/Pause */}
+                    <button
+                      type="button"
+                      disabled={
+                        playbackRecording?.id !== recording.id ||
+                        playbackStatus === "pause-requested"
+                      }
+                      onClick={
+                        playbackStatus === "paused"
+                          ? resumePlayback
+                          : pausePlayback
+                      }
+                      className="rounded border border-[#a77b31] bg-[#634819] p-1.5 text-white transition-opacity hover:brightness-110 disabled:opacity-40"
+                      title={
+                        playbackStatus === "paused"
+                          ? "Resume playback"
+                          : "Pause playback"
+                      }
+                    >
+                      {playbackStatus === "paused" ? (
+                        <Play size={16} />
+                      ) : (
+                        <Pause size={16} />
+                      )}
+                    </button>
+
+                    {/* Next (Step Forward) */}
+                    <button
+                      type="button"
+                      disabled={
+                        playbackRecording?.id !== recording.id ||
+                        playbackStatus !== "paused" ||
+                        isAnimating
+                      }
+                      onClick={() => stepPlayback("next")}
+                      className="rounded border border-[#777] bg-[#3b3b3b] p-1.5 text-white transition-opacity hover:brightness-110 disabled:opacity-40"
+                      title="Next step"
+                    >
+                      <SkipForward size={16} />
+                    </button>
+
+                    {/* Stop */}
+                    <button
+                      type="button"
+                      disabled={
+                        playbackRecording?.id !== recording.id ||
+                        playbackStatus === "finished"
+                      }
+                      onClick={stopPlayback}
+                      className="rounded border border-[#7a3030] bg-[#4a2020] p-1.5 text-white transition-opacity hover:brightness-110 disabled:opacity-40"
+                      title="Stop playback"
+                    >
+                      <Square size={16} />
+                    </button>
+
+                    {/* Loop */}
+                    <button
+                      type="button"
+                      onClick={togglePlaybackLoopMode}
+                      className={`rounded border p-1.5 transition-opacity ${
+                        playbackLoopMode === "bidirectional"
+                          ? "border-[#27ae60] bg-[#1e5631] text-white hover:brightness-110"
+                          : playbackLoopMode === "single"
+                            ? "border-[#e67e22] bg-[#7a4214] text-white hover:brightness-110"
+                            : "border-[#666] bg-[#333] text-white hover:brightness-110"
+                      } disabled:opacity-40`}
+                      title={
+                        playbackLoopMode === "off"
+                          ? "Loop off (click: single direction)"
+                          : playbackLoopMode === "single"
+                            ? "Single direction loop (click: bidirectional)"
+                            : "Bidirectional loop (click: loop off)"
+                      }
+                    >
+                      <Repeat size={16} />
+                    </button>
                   </div>
-                  {playbackRecording?.id === recording.id && (
-                      <>
-                        <div className="mt-2 flex gap-2">
-                          {/* Previous (Step Back) */}
-                          <button
-                            type="button"
-                            disabled={
-                              playbackStatus !== "paused" || isAnimating
-                            }
-                            onClick={() => stepPlayback("previous")}
-                            className="rounded border border-[#777] bg-[#3b3b3b] p-1.5 text-white transition-opacity hover:brightness-110 disabled:opacity-40"
-                            title="Previous step"
-                          >
-                            <SkipBack size={16} />
-                          </button>
-
-                          {/* Play/Pause */}
-                          <button
-                            type="button"
-                            disabled={playbackStatus === "pause-requested"}
-                            onClick={
-                              playbackStatus === "paused"
-                                ? resumePlayback
-                                : pausePlayback
-                            }
-                            className="rounded border border-[#a77b31] bg-[#634819] p-1.5 text-white transition-opacity hover:brightness-110 disabled:opacity-40"
-                            title={
-                              playbackStatus === "paused"
-                                ? "Resume playback"
-                                : "Pause playback"
-                            }
-                          >
-                            {playbackStatus === "paused" ? (
-                              <Play size={16} />
-                            ) : (
-                              <Pause size={16} />
-                            )}
-                          </button>
-
-                          {/* Next (Step Forward) */}
-                          <button
-                            type="button"
-                            disabled={
-                              playbackStatus !== "paused" || isAnimating
-                            }
-                            onClick={() => stepPlayback("next")}
-                            className="rounded border border-[#777] bg-[#3b3b3b] p-1.5 text-white transition-opacity hover:brightness-110 disabled:opacity-40"
-                            title="Next step"
-                          >
-                            <SkipForward size={16} />
-                          </button>
-
-                          {/* Stop */}
-                          <button
-                            type="button"
-                            disabled={playbackStatus === "finished"}
-                            onClick={stopPlayback}
-                            className="rounded border border-[#7a3030] bg-[#4a2020] p-1.5 text-white transition-opacity hover:brightness-110 disabled:opacity-40"
-                            title="Stop playback"
-                          >
-                            <Square size={16} />
-                          </button>
-
-                          {/* Loop */}
-                          <button
-                            type="button"
-                            disabled={playbackStatus === "idle" || playbackStatus === "finished"}
-                            onClick={togglePlaybackLoopMode}
-                            className={`rounded border p-1.5 transition-opacity ${
-                              playbackLoopMode === "bidirectional"
-                                ? "border-[#27ae60] bg-[#1e5631] text-white hover:brightness-110"
-                                : playbackLoopMode === "single"
-                                  ? "border-[#e67e22] bg-[#7a4214] text-white hover:brightness-110"
-                                  : "border-[#666] bg-[#333] text-white hover:brightness-110"
-                            } disabled:opacity-40`}
-                            title={
-                              playbackLoopMode === "off"
-                                ? "Loop off (click: single direction)"
-                                : playbackLoopMode === "single"
-                                  ? "Single direction loop (click: bidirectional)"
-                                  : "Bidirectional loop (click: loop off)"
-                            }
-                          >
-                            <Repeat size={16} />
-                          </button>
-                        </div>
-                      </>
-                    )}
                 </div>
                 {recording.source === "user" && (
                   <button
