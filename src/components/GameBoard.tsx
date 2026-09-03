@@ -76,7 +76,7 @@ export default function GameBoard({ children }: GameBoardProps) {
           return (
             <div
               key={index}
-              onClick={() => handleSlotClick(index)}
+              onPointerDown={() => handleSlotClick(index)}
               className={`
                 w-full aspect-square max-w-[70px] rounded-xl border flex flex-col items-center justify-center 
                 text-center font-mono select-none shadow-lg transition-all text-xs font-bold
